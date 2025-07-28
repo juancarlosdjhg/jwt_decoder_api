@@ -1,21 +1,28 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import time
 import jwt
 
-ak = "AkMfH8kKPbAEdD8CEMJMCnDhQDRN3MAt" # fill access key
-sk = "4pePaYneC8AgfNKeMBADt4M4HCM49T8L" # fill secret key
+app = FastAPI()
 
-def encode_jwt_token(ak, sk):
-    headers = {
-        "alg": "HS256",
-        "typ": "JWT"
-    }
-    payload = {
-        "iss": ak,
-        "exp": int(time.time()) + 1800, # The valid time, in this example, represents the current time+1800s(30min)
-        "nbf": int(time.time()) - 5 # The time when it starts to take effect, in this example, represents the current time minus 5s
-    }
-    token = jwt.encode(payload, sk, headers=headers)
-    return token
+class TokenRequest(BaseModel):
+    ak: str
+    sk: str
 
-authorization = encode_jwt_token(ak, sk)
-print(authorization)
+@app.post("/jwt_token_decoder_api_juanito")
+def generate_jwt_token(data: TokenRequest):
+    try:
+        headers = {
+            "alg": "HS256",
+            "typ": "JWT"
+        }
+        payload = {
+            "iss": data.ak,
+            "exp": int(time.time()) + 1800,
+            "nbf": int(time.time()) - 5
+        }
+
+        token = jwt.encode(payload, data.sk, algorithm="HS256", headers=headers)
+        return {"token": token}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Token generation failed: {str(e)}")
